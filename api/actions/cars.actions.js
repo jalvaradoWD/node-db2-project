@@ -13,26 +13,44 @@ const createCar = async (req, res) => {
    *  milage
    *  transmission_type - OPTIONAL
    *    - Choices [CVT, Semi-Auto, ]
-   *
    */
 
-  const { transmission_type: type } = req.body;
+  let createdCar = req.body;
 
-  const transmissionTypes = ["CVT", "Semi-Auto", "Automatic", "Manual"];
-
-  if (transmissionTypes.includes(type)) {
-    return res
-      .status(400)
-      .json({ message: "You've entered in the incorrect transmission type." });
-  }
-  let createdCar = {
-    ...req.body,
-    transmission_type: type ? type : null,
-  };
-
-  await db("cars").insert(createCar);
+  await db("cars").insert(createdCar);
 
   return res.json(createdCar);
 };
 
-module.exports = { getAllCars };
+const updateCar = async (req, res) => {
+  /**
+   * Fields requried
+   *  vin
+   *  make
+   *  model
+   *  milage
+   *  transmission_type - OPTIONAL
+   *    - Choices [CVT, Semi-Auto, ]
+   */
+  const { id } = req.params;
+  const { transmission_type: type } = req.body;
+
+  let updatedCarInfo = {
+    ...req.body,
+    transmission_type: type ? type : null,
+  };
+
+  await db("cars").where({ id }).update(updatedCarInfo);
+  return res.status(200).json(updatedCarInfo);
+};
+
+const deleteCar = async (req, res) => {
+  const { id } = req.params;
+  await db("cars").where({ id }).del();
+
+  return res.status(200).json({
+    message: "Car Deleted",
+  });
+};
+
+module.exports = { getAllCars, createCar, updateCar, deleteCar };
