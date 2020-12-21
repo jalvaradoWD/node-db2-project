@@ -1,4 +1,9 @@
 const db = require("../../data/connection");
+const {
+  transmissionTypes,
+  statusOfVehicle,
+  expectedFields,
+} = require("./choices");
 
 const checkExpectedValues = (expectedValues, givenValues) => {
   if (givenValues.length === 0) {
@@ -23,43 +28,59 @@ const checkExpectedValues = (expectedValues, givenValues) => {
 const carMiddleware = async (req, res, next) => {
   const { method } = req;
   try {
-    let transmissionTypes = ["CVT", "Semi-Auto", "Automatic", "Manual"];
-    let expectedFields = ["vin", "make", "model", "milage"];
-
     switch (method) {
       case "PUT":
       case "POST": {
-        const condition = !checkExpectedValues(
-          expectedFields,
-          Object.keys(
-            req.body === null || req.body === undefined ? {} : req.body
+        const { transmission_type, status_of_the_title } = req.body;
+
+        // Checks to see if all requried fields from the request have been met
+
+        if (
+          !checkExpectedValues(
+            expectedFields,
+            Object.keys(
+              req.body === null || req.body === undefined ? {} : req.body
+            )
           )
-        );
-        if (condition) {
+        ) {
           return res.status(400).json({
             message: "You're missing one or more fields with the request",
           });
         }
 
-        const { transmission_type } = req.body;
+        // Checks if a given transmission type from the request is in one of the option within the array of "transmissionTypes"
         if (transmission_type !== undefined) {
-          const checkingType = !checkExpectedValues(transmissionTypes, [
-            req.body.transmission_type,
-          ]);
-          if (checkingType) {
+          if (
+            !checkExpectedValues(transmissionTypes, [
+              req.body.transmission_type,
+            ])
+          ) {
             return res.status(400).json({
               message: "You've entered in the incorrect transmission type.",
             });
           }
         }
 
+        // Checks if a given transmission type from the request is in one of the option within the array of "statusOfVehicle"
+        if (status_of_the_title !== undefined) {
+          if (
+            !checkExpectedValues(statusOfVehicle, [
+              req.body.status_of_the_title,
+            ])
+          ) {
+            return res.status(400).json({
+              message:
+                "You've entered in the incorrect status of the title type.",
+            });
+          }
+        }
         break;
       }
 
       case "DELETE":
       case "PUT": {
         const { id } = req.params;
-        let [foundCar] = await db("cars").where({ id }).select("*");
+        let [foundCar] = await db("cars").select("*").where({ id });
 
         if (!foundCar) {
           return res.status(400).json({ message: "The car doesnt exist" });
@@ -71,6 +92,7 @@ const carMiddleware = async (req, res, next) => {
         break;
     }
   } catch (error) {
+    console.error(error);
     return res.status(500).json({
       errorMessage: "Server error",
     });
